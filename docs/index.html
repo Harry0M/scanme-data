@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScanMe Data Pipeline - Documentation & Viewer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafb; color: #1a1a2e; line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { background: linear-gradient(135deg, #1B6D3D, #4CAF50); color: white; padding: 40px 20px; text-align: center; border-radius: 16px; margin-bottom: 32px; }
+        header h1 { font-size: 2.2rem; margin-bottom: 8px; }
+        header p { opacity: 0.9; font-size: 1.1rem; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+        .tab { padding: 10px 20px; border-radius: 24px; cursor: pointer; border: 2px solid #e0e0e0; background: white; font-weight: 600; transition: all 0.2s; }
+        .tab.active { background: #1B6D3D; color: white; border-color: #1B6D3D; }
+        .tab:hover { border-color: #1B6D3D; }
+        .panel { display: none; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .panel.active { display: block; }
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+    <h1>🔬 ScanMe Data Pipeline</h1>
+    <p>Regulatory Database Documentation, Viewer & Troubleshooting</p>
+</header>
+
+<div class="tabs">
+    <div class="tab active" onclick="showPanel('viewer')">📊 Data Viewer</div>
+    <div class="tab" onclick="showPanel('maintenance')">🔧 Maintenance Guide</div>
+    <div class="tab" onclick="showPanel('errors')">⚠️ Error Solutions</div>
+    <div class="tab" onclick="showPanel('adding')">➕ Adding Sources</div>
+</div>
+
+<!-- DATA VIEWER PANEL -->
+<div id="viewer" class="panel active">
+<h2>📊 Database Viewer</h2>
+<p style="margin:12px 0;color:#666;">Upload your <code>regulatory_data.db</code> file to visualize its contents. The file is NOT uploaded anywhere — it's read locally in your browser.</p>
+<input type="file" id="dbFile" accept=".db,.sqlite" style="margin:16px 0;padding:12px;border:2px dashed #ccc;border-radius:12px;width:100%;cursor:pointer;">
+<div id="dbStats" style="display:none;margin:16px 0;padding:16px;background:#f0f7f0;border-radius:12px;">
+    <strong>Database Stats:</strong>
+    <span id="statTotal">-</span> total records |
+    <span id="statSources">-</span> sources |
+    <span id="statIngredients">-</span> unique ingredients
+</div>
+<div style="margin:16px 0;">
+    <input type="text" id="searchBox" placeholder="Search by ingredient name or CAS number..." style="width:100%;padding:12px 16px;border:2px solid #e0e0e0;border-radius:24px;font-size:1rem;">
+</div>
+<div id="resultsTable" style="overflow-x:auto;"></div>
+</div>
+
+<!-- MAINTENANCE GUIDE PANEL -->
+<div id="maintenance" class="panel">
+<h2>🔧 Keeping Your Data Up-to-Date</h2>
+<h3 style="margin:20px 0 8px;">Automatic Updates (GitHub Actions)</h3>
+<p>The pipeline runs <strong>every Monday</strong> automatically via GitHub Actions. It:</p>
+<ol style="margin:12px 0 12px 24px;">
+<li>Downloads CSV files from IARC, EFSA, Prop 65, ECHA</li>
+<li>Merges them using CAS Number → E-Number → Name hierarchy</li>
+<li>Produces a new <code>regulatory_data.db</code> + <code>version.json</code></li>
+<li>Commits <code>version.json</code> to the repo</li>
+</ol>
+<h3 style="margin:20px 0 8px;">Manual Update Steps</h3>
+<ol style="margin:12px 0 12px 24px;">
+<li>Go to your repo → Actions tab → "Update Regulatory Database"</li>
+<li>Click "Run workflow" → "Run workflow" (green button)</li>
+<li>Wait for it to complete (2-5 minutes)</li>
+<li>Download the artifact (regulatory-database.zip) from the completed run</li>
+<li>Create a new Release with the .db file attached</li>
+<li>Update the <code>url</code> field in version.json to point to the new release</li>
+</ol>
+<h3 style="margin:20px 0 8px;">How the Android App Gets Updates</h3>
+<pre style="background:#f5f5f5;padding:16px;border-radius:8px;overflow-x:auto;margin:12px 0;">
+App starts → WorkManager checks version.json (raw.githubusercontent.com)
+  → Compares with local version
+  → If newer: downloads .db from release URL
+  → Validates SHA-256 checksum
+  → Replaces local database atomically
+  → User never notices (background, silent)
+</pre>
+</div>
+
+<!-- ERROR SOLUTIONS PANEL -->
+<div id="errors" class="panel">
+<h2>⚠️ Common Errors & Solutions</h2>
+
+<div style="margin:20px 0;padding:20px;background:#fff3e0;border-left:4px solid #FF9800;border-radius:8px;">
+<h4>❌ URL Mismatch / Source Download Failed</h4>
+<p><strong>Symptom:</strong> Pipeline log shows "download failed after 3 attempts" for a source</p>
+<p><strong>Cause:</strong> The organization changed their download URL</p>
+<p><strong>Fix:</strong></p>
+<ol style="margin:8px 0 0 20px;">
+<li>Open <code>data_pipeline/build_database.py</code></li>
+<li>Find the <code>SOURCE_URLS</code> dictionary near the top</li>
+<li>Google the source name + "download CSV" (e.g., "IARC monographs CSV download")</li>
+<li>Update the URL</li>
+<li>Commit and push — the next Actions run will use the new URL</li>
+</ol>
+</div>
+
+<div style="margin:20px 0;padding:20px;background:#fce4ec;border-left:4px solid #F44336;border-radius:8px;">
+<h4>❌ CSV Column Names Changed</h4>
+<p><strong>Symptom:</strong> "0 records parsed" for a source even though download succeeded</p>
+<p><strong>Cause:</strong> The source renamed their CSV columns</p>
+<p><strong>Fix:</strong></p>
+<ol style="margin:8px 0 0 20px;">
+<li>Download the CSV manually and open in Excel/Sheets</li>
+<li>Note the new column names</li>
+<li>In <code>build_database.py</code>, find the parser function (e.g., <code>parse_iarc()</code>)</li>
+<li>Update the column detection logic (the code uses fuzzy matching like <code>"cas" in column_name</code>)</li>
+<li>If needed, add the new column name to the matching patterns</li>
+</ol>
+</div>
+
+<div style="margin:20px 0;padding:20px;background:#e3f2fd;border-left:4px solid #2196F3;border-radius:8px;">
+<h4>❌ Checksum Mismatch in App</h4>
+<p><strong>Symptom:</strong> App keeps retrying database update (check Logcat for "checksum mismatch")</p>
+<p><strong>Cause:</strong> version.json checksum doesn't match the actual .db file</p>
+<p><strong>Fix:</strong></p>
+<ol style="margin:8px 0 0 20px;">
+<li>Re-run the pipeline to regenerate both files together</li>
+<li>Make sure version.json and regulatory_data.db come from the SAME run</li>
+<li>Upload the new .db to a GitHub Release</li>
+<li>Update the <code>url</code> in version.json to point to the correct release</li>
+</ol>
+</div>
+
+<div style="margin:20px 0;padding:20px;background:#e8f5e9;border-left:4px solid #4CAF50;border-radius:8px;">
+<h4>❌ GitHub Actions Workflow Not Running</h4>
+<p><strong>Symptom:</strong> No runs appearing in Actions tab</p>
+<p><strong>Fix:</strong></p>
+<ol style="margin:8px 0 0 20px;">
+<li>Go to repo → Actions tab</li>
+<li>If you see "Workflows aren't being run" → click "I understand, enable them"</li>
+<li>If the workflow file isn't detected: ensure it's at <code>.github/workflows/update-database.yml</code></li>
+<li>Try triggering manually with "Run workflow" button</li>
+</ol>
+</div>
+
+<div style="margin:20px 0;padding:20px;background:#f3e5f5;border-left:4px solid #9C27B0;border-radius:8px;">
+<h4>❌ New Fields/Attributes Added by Source</h4>
+<p><strong>Symptom:</strong> You discover a new useful column in the source data (e.g., "target_organ")</p>
+<p><strong>Fix:</strong></p>
+<ol style="margin:8px 0 0 20px;">
+<li>Open the relevant parser function in <code>build_database.py</code></li>
+<li>Add extraction logic for the new column</li>
+<li>Map it to the appropriate field (e.g., add to <code>health_categories</code> JSON array)</li>
+<li>If it's a completely new data type, add a new column to the schema (see "Adding Sources" tab)</li>
+<li>Update Room entity in the Android app to match</li>
+</ol>
+</div>
+</div>
+
+<!-- ADDING SOURCES PANEL -->
+<div id="adding" class="panel">
+<h2>➕ Adding New Data Sources or Attributes</h2>
+
+<h3 style="margin:20px 0 8px;">Adding a New Data Source</h3>
+<ol style="margin:12px 0 12px 24px;">
+<li>Open <code>data_pipeline/build_database.py</code></li>
+<li>Add the URL to <code>SOURCE_URLS</code> dictionary:
+<pre style="background:#f5f5f5;padding:12px;border-radius:8px;margin:8px 0;">SOURCE_URLS = {
+    ...
+    "NEW_SOURCE": "https://example.com/data.csv",
+}</pre></li>
+<li>Create a parser function:
+<pre style="background:#f5f5f5;padding:12px;border-radius:8px;margin:8px 0;">def parse_new_source(csv_text: str) -> pd.DataFrame:
+    # Parse CSV, extract: cas_number, canonical_name, classification, risk_level, health_categories
+    # Return DataFrame with standard columns
+    ...</pre></li>
+<li>Add the parser call in <code>main()</code>:
+<pre style="background:#f5f5f5;padding:12px;border-radius:8px;margin:8px 0;">if raw_data.get("NEW_SOURCE"):
+    df = parse_new_source(raw_data["NEW_SOURCE"])
+    if not df.empty:
+        dataframes.append(df)</pre></li>
+<li>Run locally to test: <code>python build_database.py</code></li>
+<li>Commit and push</li>
+</ol>
+
+<h3 style="margin:20px 0 8px;">Adding a New Attribute (Column)</h3>
+<p>Example: adding <code>toxicity_limit</code> (ADI/NOAEL values)</p>
+<ol style="margin:12px 0 12px 24px;">
+<li><strong>Python script:</strong> Add the column to the SQLite schema in <code>build_database()</code></li>
+<li><strong>Android Room entity:</strong> Add the field to <code>RegulatoryDataEntity</code> in the database module</li>
+<li><strong>Room migration:</strong> Increment database version and add migration (or use destructive fallback for dev)</li>
+<li><strong>Domain model:</strong> Add to <code>RegulatoryClassification</code> in :core</li>
+<li><strong>UI:</strong> Display in <code>IngredientDetailScreen</code></li>
+</ol>
+
+<h3 style="margin:20px 0 8px;">Standard Column Mapping</h3>
+<table style="width:100%;border-collapse:collapse;margin:12px 0;">
+<tr style="background:#f5f5f5;"><th style="padding:10px;text-align:left;border-bottom:2px solid #ddd;">Column</th><th style="padding:10px;text-align:left;border-bottom:2px solid #ddd;">Type</th><th style="padding:10px;text-align:left;border-bottom:2px solid #ddd;">Description</th></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>casNumber</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT</td><td style="padding:8px;border-bottom:1px solid #eee;">CAS Registry Number (e.g., "50-00-0")</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>eNumber</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT?</td><td style="padding:8px;border-bottom:1px solid #eee;">European additive number (e.g., "E300")</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>canonicalName</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT</td><td style="padding:8px;border-bottom:1px solid #eee;">Primary ingredient name</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>source</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT</td><td style="padding:8px;border-bottom:1px solid #eee;">WHO_IARC, EFSA, CA_PROP_65, ECHA</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>classification</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT</td><td style="padding:8px;border-bottom:1px solid #eee;">IARC_GROUP_1, SAFE, RESTRICTED, etc.</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>riskLevel</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT</td><td style="padding:8px;border-bottom:1px solid #eee;">MINIMAL, LOW, MODERATE, HIGH, CRITICAL</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>healthCategories</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT (JSON)</td><td style="padding:8px;border-bottom:1px solid #eee;">["CANCER","LIVER","SKIN"] etc.</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>publicationDate</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT?</td><td style="padding:8px;border-bottom:1px solid #eee;">ISO date (e.g., "2022-01-01")</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>notes</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT?</td><td style="padding:8px;border-bottom:1px solid #eee;">Free text notes</td></tr>
+</table>
+</div>
+
+<!-- JAVASCRIPT -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+<script>
+function showPanel(id) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.target.classList.add('active');
+}
+
+let db = null;
+
+document.getElementById('dbFile').addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const SQL = await initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${f}` });
+    const buf = await file.arrayBuffer();
+    db = new SQL.Database(new Uint8Array(buf));
+
+    // Get stats
+    const total = db.exec("SELECT COUNT(*) FROM regulatory_data")[0].values[0][0];
+    const sources = db.exec("SELECT COUNT(DISTINCT source) FROM regulatory_data")[0].values[0][0];
+    const ingredients = db.exec("SELECT COUNT(DISTINCT casNumber) FROM regulatory_data")[0].values[0][0];
+
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statSources').textContent = sources;
+    document.getElementById('statIngredients').textContent = ingredients;
+    document.getElementById('dbStats').style.display = 'block';
+
+    renderTable('');
+});
+
+document.getElementById('searchBox').addEventListener('input', function(e) {
+    if (db) renderTable(e.target.value);
+});
+
+function renderTable(query) {
+    let sql = "SELECT casNumber, eNumber, canonicalName, source, classification, riskLevel, healthCategories FROM regulatory_data";
+    if (query) {
+        sql += ` WHERE canonicalName LIKE '%${query}%' OR casNumber LIKE '%${query}%'`;
+    }
+    sql += " ORDER BY canonicalName LIMIT 100";
+
+    const results = db.exec(sql);
+    if (!results.length) {
+        document.getElementById('resultsTable').innerHTML = '<p style="padding:16px;color:#666;">No results found.</p>';
+        return;
+    }
+
+    const riskColors = { MINIMAL: '#4CAF50', LOW: '#8BC34A', MODERATE: '#FFC107', HIGH: '#FF9800', CRITICAL: '#F44336' };
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:0.9rem;">';
+    html += '<tr style="background:#f5f5f5;"><th style="padding:8px;text-align:left;">Name</th><th style="padding:8px;">CAS</th><th style="padding:8px;">E-Num</th><th style="padding:8px;">Source</th><th style="padding:8px;">Classification</th><th style="padding:8px;">Risk</th><th style="padding:8px;">Health</th></tr>';
+
+    for (const row of results[0].values) {
+        const color = riskColors[row[5]] || '#999';
+        html += `<tr style="border-bottom:1px solid #eee;">`;
+        html += `<td style="padding:8px;font-weight:600;">${row[2]}</td>`;
+        html += `<td style="padding:8px;font-family:monospace;font-size:0.8rem;">${row[0]}</td>`;
+        html += `<td style="padding:8px;">${row[1] || '-'}</td>`;
+        html += `<td style="padding:8px;"><span style="background:#e3f2fd;padding:2px 8px;border-radius:12px;font-size:0.8rem;">${row[3]}</span></td>`;
+        html += `<td style="padding:8px;font-size:0.85rem;">${row[4].replace(/_/g,' ')}</td>`;
+        html += `<td style="padding:8px;"><span style="background:${color};color:white;padding:2px 10px;border-radius:12px;font-size:0.8rem;font-weight:600;">${row[5]}</span></td>`;
+        html += `<td style="padding:8px;font-size:0.8rem;">${row[6].replace(/[\[\]"]/g,'').replace(/,/g,', ')}</td>`;
+        html += `</tr>`;
+    }
+    html += '</table>';
+    document.getElementById('resultsTable').innerHTML = html;
+}
+</script>
+</div>
+</body>
+</html>

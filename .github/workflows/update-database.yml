@@ -1,0 +1,42 @@
+name: Update Regulatory Database
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'  # Every Monday at midnight UTC
+  workflow_dispatch:  # Manual trigger from GitHub UI
+
+jobs:
+  build-database:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r data_pipeline/requirements.txt
+
+      - name: Build regulatory database
+        run: python data_pipeline/build_database.py
+
+      - name: Upload database as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: regulatory-database
+          path: |
+            data_pipeline/output/regulatory_data.db
+            data_pipeline/output/version.json
+
+      - name: Commit version.json to repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          cp data_pipeline/output/version.json version.json
+          git add version.json
+          git diff --cached --quiet || git commit -m "Update version.json [$(date +%Y-%m-%d)]"
+          git push
