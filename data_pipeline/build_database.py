@@ -61,14 +61,16 @@ SOURCE_URLS = {
     ),
 }
 
-# Local fallback CSV files (always available, manually maintained)
+# Local CSV files (manually maintained — this is the primary data source)
 LOCAL_SOURCES = {
     "IARC": LOCAL_SOURCES_DIR / "iarc_classifications.csv",
     "CA_PROP_65": LOCAL_SOURCES_DIR / "prop65_chemicals.csv",
+    "EFSA": LOCAL_SOURCES_DIR / "efsa_openfoodtox.csv",
+    "ECHA": LOCAL_SOURCES_DIR / "echa_hazards.csv",
 }
 
-# Force-use local sources for these (live URLs are broken or return HTML)
-FORCE_LOCAL = {"IARC", "CA_PROP_65"}
+# Force-use local sources for ALL (live URLs are unreliable)
+FORCE_LOCAL = {"IARC", "CA_PROP_65", "EFSA", "ECHA"}
 
 # Request settings
 REQUEST_TIMEOUT = 60  # seconds

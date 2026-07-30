@@ -1,278 +1,202 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ScanMe Data Pipeline - Documentation & Viewer</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafb; color: #1a1a2e; line-height: 1.6; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        header { background: linear-gradient(135deg, #1B6D3D, #4CAF50); color: white; padding: 40px 20px; text-align: center; border-radius: 16px; margin-bottom: 32px; }
-        header h1 { font-size: 2.2rem; margin-bottom: 8px; }
-        header p { opacity: 0.9; font-size: 1.1rem; }
-        .tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
-        .tab { padding: 10px 20px; border-radius: 24px; cursor: pointer; border: 2px solid #e0e0e0; background: white; font-weight: 600; transition: all 0.2s; }
-        .tab.active { background: #1B6D3D; color: white; border-color: #1B6D3D; }
-        .tab:hover { border-color: #1B6D3D; }
-        .panel { display: none; background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
-        .panel.active { display: block; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScanMe Data - How To Update</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafb;color:#1a1a2e;line-height:1.7;padding:20px}
+.container{max-width:900px;margin:0 auto}
+h1{background:linear-gradient(135deg,#1B6D3D,#4CAF50);color:white;padding:30px;border-radius:16px;text-align:center;margin-bottom:30px}
+h2{color:#1B6D3D;margin:30px 0 15px;padding-bottom:8px;border-bottom:2px solid #e0e0e0}
+h3{color:#333;margin:20px 0 10px}
+.card{background:white;border-radius:12px;padding:24px;margin:16px 0;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.step{background:#e8f5e9;border-left:4px solid #4CAF50;padding:16px;margin:12px 0;border-radius:0 8px 8px 0}
+.warning{background:#fff3e0;border-left:4px solid #FF9800;padding:16px;margin:12px 0;border-radius:0 8px 8px 0}
+.error{background:#fce4ec;border-left:4px solid #F44336;padding:16px;margin:12px 0;border-radius:0 8px 8px 0}
+code{background:#f5f5f5;padding:2px 6px;border-radius:4px;font-size:0.9em}
+pre{background:#f5f5f5;padding:16px;border-radius:8px;overflow-x:auto;margin:12px 0;font-size:0.85em}
+table{width:100%;border-collapse:collapse;margin:12px 0}
+th,td{padding:10px;text-align:left;border-bottom:1px solid #eee}
+th{background:#f5f5f5;font-weight:600}
+.file-path{background:#e3f2fd;padding:8px 12px;border-radius:6px;font-family:monospace;margin:8px 0;display:inline-block}
+ol,ul{margin:8px 0 8px 24px}
+li{margin:4px 0}
 </style>
 </head>
 <body>
 <div class="container">
-<header>
-    <h1>🔬 ScanMe Data Pipeline</h1>
-    <p>Regulatory Database Documentation, Viewer & Troubleshooting</p>
-</header>
+<h1>🔬 ScanMe Data Pipeline<br><small style="font-size:0.5em;opacity:0.9">How to keep your ingredient database up to date</small></h1>
 
-<div class="tabs">
-    <div class="tab active" onclick="showPanel('viewer')">📊 Data Viewer</div>
-    <div class="tab" onclick="showPanel('maintenance')">🔧 Maintenance Guide</div>
-    <div class="tab" onclick="showPanel('errors')">⚠️ Error Solutions</div>
-    <div class="tab" onclick="showPanel('adding')">➕ Adding Sources</div>
-</div>
-
-<!-- DATA VIEWER PANEL -->
-<div id="viewer" class="panel active">
-<h2>📊 Database Viewer</h2>
-<p style="margin:12px 0;color:#666;">Upload your <code>regulatory_data.db</code> file to visualize its contents. The file is NOT uploaded anywhere — it's read locally in your browser.</p>
-<input type="file" id="dbFile" accept=".db,.sqlite" style="margin:16px 0;padding:12px;border:2px dashed #ccc;border-radius:12px;width:100%;cursor:pointer;">
-<div id="dbStats" style="display:none;margin:16px 0;padding:16px;background:#f0f7f0;border-radius:12px;">
-    <strong>Database Stats:</strong>
-    <span id="statTotal">-</span> total records |
-    <span id="statSources">-</span> sources |
-    <span id="statIngredients">-</span> unique ingredients
-</div>
-<div style="margin:16px 0;">
-    <input type="text" id="searchBox" placeholder="Search by ingredient name or CAS number..." style="width:100%;padding:12px 16px;border:2px solid #e0e0e0;border-radius:24px;font-size:1rem;">
-</div>
-<div id="resultsTable" style="overflow-x:auto;"></div>
-</div>
-
-<!-- MAINTENANCE GUIDE PANEL -->
-<div id="maintenance" class="panel">
-<h2>🔧 Keeping Your Data Up-to-Date</h2>
-<h3 style="margin:20px 0 8px;">Automatic Updates (GitHub Actions)</h3>
-<p>The pipeline runs <strong>every Monday</strong> automatically via GitHub Actions. It:</p>
-<ol style="margin:12px 0 12px 24px;">
-<li>Downloads CSV files from IARC, EFSA, Prop 65, ECHA</li>
-<li>Merges them using CAS Number → E-Number → Name hierarchy</li>
-<li>Produces a new <code>regulatory_data.db</code> + <code>version.json</code></li>
-<li>Commits <code>version.json</code> to the repo</li>
-</ol>
-<h3 style="margin:20px 0 8px;">Manual Update Steps</h3>
-<ol style="margin:12px 0 12px 24px;">
-<li>Go to your repo → Actions tab → "Update Regulatory Database"</li>
-<li>Click "Run workflow" → "Run workflow" (green button)</li>
-<li>Wait for it to complete (2-5 minutes)</li>
-<li>Download the artifact (regulatory-database.zip) from the completed run</li>
-<li>Create a new Release with the .db file attached</li>
-<li>Update the <code>url</code> field in version.json to point to the new release</li>
-</ol>
-<h3 style="margin:20px 0 8px;">How the Android App Gets Updates</h3>
-<pre style="background:#f5f5f5;padding:16px;border-radius:8px;overflow-x:auto;margin:12px 0;">
-App starts → WorkManager checks version.json (raw.githubusercontent.com)
-  → Compares with local version
-  → If newer: downloads .db from release URL
-  → Validates SHA-256 checksum
-  → Replaces local database atomically
-  → User never notices (background, silent)
+<div class="card">
+<h2>🗂️ How The System Works (Simple Explanation)</h2>
+<p>Your app needs a database of ingredients + their health risks. Here's the flow:</p>
+<pre>
+You edit 4 CSV files (simple spreadsheets) in the "sources" folder
+    ↓
+You push to GitHub
+    ↓
+GitHub Action runs automatically (every Monday)
+    ↓
+Python script reads your 4 CSV files → builds one .db file
+    ↓
+You download that .db file → create a GitHub Release
+    ↓
+Android app checks for new version → downloads it silently
 </pre>
+<p><strong>You never touch the .db file directly.</strong> You only edit the 4 CSV files. The script does the conversion for you.</p>
 </div>
 
-<!-- ERROR SOLUTIONS PANEL -->
-<div id="errors" class="panel">
-<h2>⚠️ Common Errors & Solutions</h2>
+<div class="card">
+<h2>📁 The 4 Source Files (Where You Add Data)</h2>
+<p>All files are in: <span class="file-path">scanme-data/data_pipeline/sources/</span></p>
 
-<div style="margin:20px 0;padding:20px;background:#fff3e0;border-left:4px solid #FF9800;border-radius:8px;">
-<h4>❌ URL Mismatch / Source Download Failed</h4>
-<p><strong>Symptom:</strong> Pipeline log shows "download failed after 3 attempts" for a source</p>
-<p><strong>Cause:</strong> The organization changed their download URL</p>
-<p><strong>Fix:</strong></p>
-<ol style="margin:8px 0 0 20px;">
-<li>Open <code>data_pipeline/build_database.py</code></li>
-<li>Find the <code>SOURCE_URLS</code> dictionary near the top</li>
-<li>Google the source name + "download CSV" (e.g., "IARC monographs CSV download")</li>
-<li>Update the URL</li>
-<li>Commit and push — the next Actions run will use the new URL</li>
-</ol>
-</div>
-
-<div style="margin:20px 0;padding:20px;background:#fce4ec;border-left:4px solid #F44336;border-radius:8px;">
-<h4>❌ CSV Column Names Changed</h4>
-<p><strong>Symptom:</strong> "0 records parsed" for a source even though download succeeded</p>
-<p><strong>Cause:</strong> The source renamed their CSV columns</p>
-<p><strong>Fix:</strong></p>
-<ol style="margin:8px 0 0 20px;">
-<li>Download the CSV manually and open in Excel/Sheets</li>
-<li>Note the new column names</li>
-<li>In <code>build_database.py</code>, find the parser function (e.g., <code>parse_iarc()</code>)</li>
-<li>Update the column detection logic (the code uses fuzzy matching like <code>"cas" in column_name</code>)</li>
-<li>If needed, add the new column name to the matching patterns</li>
-</ol>
-</div>
-
-<div style="margin:20px 0;padding:20px;background:#e3f2fd;border-left:4px solid #2196F3;border-radius:8px;">
-<h4>❌ Checksum Mismatch in App</h4>
-<p><strong>Symptom:</strong> App keeps retrying database update (check Logcat for "checksum mismatch")</p>
-<p><strong>Cause:</strong> version.json checksum doesn't match the actual .db file</p>
-<p><strong>Fix:</strong></p>
-<ol style="margin:8px 0 0 20px;">
-<li>Re-run the pipeline to regenerate both files together</li>
-<li>Make sure version.json and regulatory_data.db come from the SAME run</li>
-<li>Upload the new .db to a GitHub Release</li>
-<li>Update the <code>url</code> in version.json to point to the correct release</li>
-</ol>
-</div>
-
-<div style="margin:20px 0;padding:20px;background:#e8f5e9;border-left:4px solid #4CAF50;border-radius:8px;">
-<h4>❌ GitHub Actions Workflow Not Running</h4>
-<p><strong>Symptom:</strong> No runs appearing in Actions tab</p>
-<p><strong>Fix:</strong></p>
-<ol style="margin:8px 0 0 20px;">
-<li>Go to repo → Actions tab</li>
-<li>If you see "Workflows aren't being run" → click "I understand, enable them"</li>
-<li>If the workflow file isn't detected: ensure it's at <code>.github/workflows/update-database.yml</code></li>
-<li>Try triggering manually with "Run workflow" button</li>
-</ol>
-</div>
-
-<div style="margin:20px 0;padding:20px;background:#f3e5f5;border-left:4px solid #9C27B0;border-radius:8px;">
-<h4>❌ New Fields/Attributes Added by Source</h4>
-<p><strong>Symptom:</strong> You discover a new useful column in the source data (e.g., "target_organ")</p>
-<p><strong>Fix:</strong></p>
-<ol style="margin:8px 0 0 20px;">
-<li>Open the relevant parser function in <code>build_database.py</code></li>
-<li>Add extraction logic for the new column</li>
-<li>Map it to the appropriate field (e.g., add to <code>health_categories</code> JSON array)</li>
-<li>If it's a completely new data type, add a new column to the schema (see "Adding Sources" tab)</li>
-<li>Update Room entity in the Android app to match</li>
-</ol>
-</div>
-</div>
-
-<!-- ADDING SOURCES PANEL -->
-<div id="adding" class="panel">
-<h2>➕ Adding New Data Sources or Attributes</h2>
-
-<h3 style="margin:20px 0 8px;">Adding a New Data Source</h3>
-<ol style="margin:12px 0 12px 24px;">
-<li>Open <code>data_pipeline/build_database.py</code></li>
-<li>Add the URL to <code>SOURCE_URLS</code> dictionary:
-<pre style="background:#f5f5f5;padding:12px;border-radius:8px;margin:8px 0;">SOURCE_URLS = {
-    ...
-    "NEW_SOURCE": "https://example.com/data.csv",
-}</pre></li>
-<li>Create a parser function:
-<pre style="background:#f5f5f5;padding:12px;border-radius:8px;margin:8px 0;">def parse_new_source(csv_text: str) -> pd.DataFrame:
-    # Parse CSV, extract: cas_number, canonical_name, classification, risk_level, health_categories
-    # Return DataFrame with standard columns
-    ...</pre></li>
-<li>Add the parser call in <code>main()</code>:
-<pre style="background:#f5f5f5;padding:12px;border-radius:8px;margin:8px 0;">if raw_data.get("NEW_SOURCE"):
-    df = parse_new_source(raw_data["NEW_SOURCE"])
-    if not df.empty:
-        dataframes.append(df)</pre></li>
-<li>Run locally to test: <code>python build_database.py</code></li>
-<li>Commit and push</li>
-</ol>
-
-<h3 style="margin:20px 0 8px;">Adding a New Attribute (Column)</h3>
-<p>Example: adding <code>toxicity_limit</code> (ADI/NOAEL values)</p>
-<ol style="margin:12px 0 12px 24px;">
-<li><strong>Python script:</strong> Add the column to the SQLite schema in <code>build_database()</code></li>
-<li><strong>Android Room entity:</strong> Add the field to <code>RegulatoryDataEntity</code> in the database module</li>
-<li><strong>Room migration:</strong> Increment database version and add migration (or use destructive fallback for dev)</li>
-<li><strong>Domain model:</strong> Add to <code>RegulatoryClassification</code> in :core</li>
-<li><strong>UI:</strong> Display in <code>IngredientDetailScreen</code></li>
-</ol>
-
-<h3 style="margin:20px 0 8px;">Standard Column Mapping</h3>
-<table style="width:100%;border-collapse:collapse;margin:12px 0;">
-<tr style="background:#f5f5f5;"><th style="padding:10px;text-align:left;border-bottom:2px solid #ddd;">Column</th><th style="padding:10px;text-align:left;border-bottom:2px solid #ddd;">Type</th><th style="padding:10px;text-align:left;border-bottom:2px solid #ddd;">Description</th></tr>
-<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>casNumber</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT</td><td style="padding:8px;border-bottom:1px solid #eee;">CAS Registry Number (e.g., "50-00-0")</td></tr>
-<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>eNumber</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT?</td><td style="padding:8px;border-bottom:1px solid #eee;">European additive number (e.g., "E300")</td></tr>
-<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>canonicalName</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT</td><td style="padding:8px;border-bottom:1px solid #eee;">Primary ingredient name</td></tr>
-<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>source</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT</td><td style="padding:8px;border-bottom:1px solid #eee;">WHO_IARC, EFSA, CA_PROP_65, ECHA</td></tr>
-<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>classification</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT</td><td style="padding:8px;border-bottom:1px solid #eee;">IARC_GROUP_1, SAFE, RESTRICTED, etc.</td></tr>
-<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>riskLevel</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT</td><td style="padding:8px;border-bottom:1px solid #eee;">MINIMAL, LOW, MODERATE, HIGH, CRITICAL</td></tr>
-<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>healthCategories</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT (JSON)</td><td style="padding:8px;border-bottom:1px solid #eee;">["CANCER","LIVER","SKIN"] etc.</td></tr>
-<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>publicationDate</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT?</td><td style="padding:8px;border-bottom:1px solid #eee;">ISO date (e.g., "2022-01-01")</td></tr>
-<tr><td style="padding:8px;border-bottom:1px solid #eee;"><code>notes</code></td><td style="padding:8px;border-bottom:1px solid #eee;">TEXT?</td><td style="padding:8px;border-bottom:1px solid #eee;">Free text notes</td></tr>
+<table>
+<tr><th>#</th><th>File Name</th><th>Source Website</th><th>What It Contains</th></tr>
+<tr><td>1</td><td><code>iarc_classifications.csv</code></td><td><a href="https://monographs.iarc.who.int/agents-classified-by-the-iarc/">IARC Monographs</a></td><td>Cancer classifications (Group 1, 2A, 2B, 3, 4)</td></tr>
+<tr><td>2</td><td><code>efsa_openfoodtox.csv</code></td><td><a href="https://www.efsa.europa.eu/en/data/chemical-hazards-data">EFSA OpenFoodTox</a></td><td>Food additive safety (ADI limits, hazards)</td></tr>
+<tr><td>3</td><td><code>prop65_chemicals.csv</code></td><td><a href="https://oehha.ca.gov/proposition-65/proposition-65-list">CA Proposition 65</a></td><td>Chemicals causing cancer/reproductive harm</td></tr>
+<tr><td>4</td><td><code>echa_hazards.csv</code></td><td><a href="https://echa.europa.eu/regulations/clp/cl-inventory">ECHA CL Inventory</a></td><td>Chemical hazard classifications (EU)</td></tr>
 </table>
 </div>
 
-<!-- JAVASCRIPT -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
-<script>
-function showPanel(id) {
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    event.target.classList.add('active');
-}
+<div class="card">
+<h2>✏️ How To Add New Ingredients (Manual Update)</h2>
+<p>You recommended doing this manually. Here's exactly how:</p>
 
-let db = null;
+<h3>Step 1: Find an ingredient you want to add</h3>
+<p>Example: You want to add "Tartrazine" (a food coloring).</p>
 
-document.getElementById('dbFile').addEventListener('change', async function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+<h3>Step 2: Look it up on one of the source websites</h3>
+<ul>
+<li>Go to <a href="https://monographs.iarc.who.int/agents-classified-by-the-iarc/">IARC</a> → search for it → note the Group (1, 2A, 2B, 3)</li>
+<li>Or go to <a href="https://oehha.ca.gov/proposition-65/proposition-65-list">Prop 65</a> → search → note if it's listed for cancer/reproductive</li>
+<li>Or go to <a href="https://www.efsa.europa.eu/en/data/chemical-hazards-data">EFSA</a> → search → note the ADI and hazard</li>
+<li>Or go to <a href="https://echa.europa.eu/regulations/clp/cl-inventory">ECHA</a> → search → note hazard class and statements</li>
+</ul>
 
-    const SQL = await initSqlJs({ locateFile: f => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${f}` });
-    const buf = await file.arrayBuffer();
-    db = new SQL.Database(new Uint8Array(buf));
+<h3>Step 3: Find the CAS number</h3>
+<p>Every chemical has a unique CAS number. Find it by Googling: <code>"Tartrazine CAS number"</code> → Result: <code>1934-21-0</code></p>
 
-    // Get stats
-    const total = db.exec("SELECT COUNT(*) FROM regulatory_data")[0].values[0][0];
-    const sources = db.exec("SELECT COUNT(DISTINCT source) FROM regulatory_data")[0].values[0][0];
-    const ingredients = db.exec("SELECT COUNT(DISTINCT casNumber) FROM regulatory_data")[0].values[0][0];
+<h3>Step 4: Add a new row to the correct CSV file</h3>
+<p>Open the CSV file in any text editor (Notepad, VS Code) or Excel. Add a new row at the bottom.</p>
 
-    document.getElementById('statTotal').textContent = total;
-    document.getElementById('statSources').textContent = sources;
-    document.getElementById('statIngredients').textContent = ingredients;
-    document.getElementById('dbStats').style.display = 'block';
+<div class="step">
+<strong>For IARC (cancer):</strong> Open <code>iarc_classifications.csv</code> and add:<br>
+<code>Tartrazine,1934-21-0,3,112,2015</code><br>
+<small>Format: Agent name, CAS number, Group (1/2A/2B/3/4), Volume number, Year</small>
+</div>
 
-    renderTable('');
-});
+<div class="step">
+<strong>For EFSA (food safety):</strong> Open <code>efsa_openfoodtox.csv</code> and add:<br>
+<code>Tartrazine,1934-21-0,E102,ADHD link inconclusive,ADI 7.5 mg/kg bw/day,2009</code><br>
+<small>Format: Name, CAS, E-number, Hazard description, Reference point, Year</small>
+</div>
 
-document.getElementById('searchBox').addEventListener('input', function(e) {
-    if (db) renderTable(e.target.value);
-});
+<div class="step">
+<strong>For Prop 65 (California):</strong> Open <code>prop65_chemicals.csv</code> and add:<br>
+<code>Tartrazine,1934-21-0,cancer,SQE,01/01/2020</code><br>
+<small>Format: Chemical name, CAS, Type of Toxicity, Listing Mechanism, Date Listed</small>
+</div>
 
-function renderTable(query) {
-    let sql = "SELECT casNumber, eNumber, canonicalName, source, classification, riskLevel, healthCategories FROM regulatory_data";
-    if (query) {
-        sql += ` WHERE canonicalName LIKE '%${query}%' OR casNumber LIKE '%${query}%'`;
-    }
-    sql += " ORDER BY canonicalName LIMIT 100";
+<div class="step">
+<strong>For ECHA (EU hazards):</strong> Open <code>echa_hazards.csv</code> and add:<br>
+<code>Tartrazine,1934-21-0,Skin Sens. 1; Eye Irrit. 2,H317 H319 - Skin sensitizer and eye irritant</code><br>
+<small>Format: Name, CAS, Hazard Class, Hazard Statement</small>
+</div>
 
-    const results = db.exec(sql);
-    if (!results.length) {
-        document.getElementById('resultsTable').innerHTML = '<p style="padding:16px;color:#666;">No results found.</p>';
-        return;
-    }
+<h3>Step 5: Push to GitHub</h3>
+<pre>cd c:\Users\palha\scanme\scanme-data
+git add .
+git commit -m "Added Tartrazine to database"
+git push origin main</pre>
 
-    const riskColors = { MINIMAL: '#4CAF50', LOW: '#8BC34A', MODERATE: '#FFC107', HIGH: '#FF9800', CRITICAL: '#F44336' };
-    let html = '<table style="width:100%;border-collapse:collapse;font-size:0.9rem;">';
-    html += '<tr style="background:#f5f5f5;"><th style="padding:8px;text-align:left;">Name</th><th style="padding:8px;">CAS</th><th style="padding:8px;">E-Num</th><th style="padding:8px;">Source</th><th style="padding:8px;">Classification</th><th style="padding:8px;">Risk</th><th style="padding:8px;">Health</th></tr>';
+<h3>Step 6: Wait for Monday (or trigger manually)</h3>
+<p>GitHub Action runs every Monday. Or go to Actions tab → "Run workflow" to trigger now.</p>
 
-    for (const row of results[0].values) {
-        const color = riskColors[row[5]] || '#999';
-        html += `<tr style="border-bottom:1px solid #eee;">`;
-        html += `<td style="padding:8px;font-weight:600;">${row[2]}</td>`;
-        html += `<td style="padding:8px;font-family:monospace;font-size:0.8rem;">${row[0]}</td>`;
-        html += `<td style="padding:8px;">${row[1] || '-'}</td>`;
-        html += `<td style="padding:8px;"><span style="background:#e3f2fd;padding:2px 8px;border-radius:12px;font-size:0.8rem;">${row[3]}</span></td>`;
-        html += `<td style="padding:8px;font-size:0.85rem;">${row[4].replace(/_/g,' ')}</td>`;
-        html += `<td style="padding:8px;"><span style="background:${color};color:white;padding:2px 10px;border-radius:12px;font-size:0.8rem;font-weight:600;">${row[5]}</span></td>`;
-        html += `<td style="padding:8px;font-size:0.8rem;">${row[6].replace(/[\[\]"]/g,'').replace(/,/g,', ')}</td>`;
-        html += `</tr>`;
-    }
-    html += '</table>';
-    document.getElementById('resultsTable').innerHTML = html;
-}
-</script>
+<h3>Step 7: Create a new Release</h3>
+<ol>
+<li>After Action completes → download the artifact (regulatory-database.zip)</li>
+<li>Go to Releases → Create new release</li>
+<li>Tag it with today's date (e.g., v2026-07-30)</li>
+<li>Attach the .db file</li>
+<li>Publish</li>
+</ol>
+<p>The app will pick up the new database automatically within 24 hours.</p>
+</div>
+
+<div class="card">
+<h2>📋 CSV Format Reference (Copy-Paste Templates)</h2>
+
+<h3>iarc_classifications.csv</h3>
+<pre>Agent,CAS No,Group,Volume,Year
+Chemical Name,12345-67-8,1,100,2020</pre>
+<p>Groups: <strong>1</strong> = Causes cancer, <strong>2A</strong> = Probably causes cancer, <strong>2B</strong> = Possibly causes cancer, <strong>3</strong> = Not classifiable, <strong>4</strong> = Probably does not cause cancer</p>
+
+<h3>efsa_openfoodtox.csv</h3>
+<pre>Substance name,CAS,E number,Hazard,Reference point,Year
+Chemical Name,12345-67-8,E123,Description of hazard,ADI value,2020</pre>
+
+<h3>prop65_chemicals.csv</h3>
+<pre>Chemical,CAS No,Type of Toxicity,Listing Mechanism,Date Listed
+Chemical Name,12345-67-8,cancer,SQE,01/01/2020</pre>
+<p>Type of Toxicity: <strong>cancer</strong>, <strong>developmental</strong>, <strong>male reproductive</strong>, <strong>female reproductive</strong> (can be multiple separated by comma)</p>
+
+<h3>echa_hazards.csv</h3>
+<pre>Substance Name,CAS Number,Hazard Class,Hazard Statement
+Chemical Name,12345-67-8,Carc. 1B; Skin Sens. 1,H350 H317 - Description</pre>
+</div>
+
+<div class="card">
+<h2>⚠️ Common Problems & Solutions</h2>
+
+<div class="error">
+<strong>Problem: GitHub Action fails</strong><br>
+<strong>Reason:</strong> Usually a typo in a CSV file (missing comma, extra quotes)<br>
+<strong>Fix:</strong> Check the Action log → it tells you which file/line has the error. Fix the CSV and push again.
+</div>
+
+<div class="warning">
+<strong>Problem: I can't find the CAS number for something</strong><br>
+<strong>Fix:</strong> Google "<em>ingredient name</em> CAS number". If it doesn't have one (like "Processed meat"), use <code>0</code> as the CAS number. The pipeline handles this.
+</div>
+
+<div class="warning">
+<strong>Problem: An ingredient appears in multiple sources with different names</strong><br>
+<strong>Example:</strong> IARC says "BHT (butylated hydroxytoluene)" but EFSA says "Butylated hydroxytoluene (BHT)"<br>
+<strong>Fix:</strong> This is fine! The pipeline merges them by CAS number. Same CAS = same ingredient. The name difference is just logged as a warning.
+</div>
+
+<div class="warning">
+<strong>Problem: I want to add a brand new data source (not one of the 4)</strong><br>
+<strong>Fix:</strong> Add a new CSV file in the <code>sources/</code> folder, then update <code>build_database.py</code> to parse it. See the "Adding Sources" section in the Python code.
+</div>
+
+<div class="error">
+<strong>Problem: App doesn't pick up the new database</strong><br>
+<strong>Reasons:</strong>
+<ul>
+<li>You forgot to create a GitHub Release (the app downloads from releases, not raw files)</li>
+<li>The <code>version.json</code> in the repo root still has the old version number</li>
+<li>The checksum in version.json doesn't match the .db file (they must come from the same pipeline run)</li>
+</ul>
+<strong>Fix:</strong> Re-run pipeline → create release with the new .db → copy version.json to repo root → push
+</div>
+</div>
+
+<div class="card">
+<h2>🔗 Quick Links</h2>
+<table>
+<tr><td><strong>IARC Source</strong></td><td><a href="https://monographs.iarc.who.int/agents-classified-by-the-iarc/">monographs.iarc.who.int</a></td></tr>
+<tr><td><strong>EFSA Source</strong></td><td><a href="https://www.efsa.europa.eu/en/data/chemical-hazards-data">efsa.europa.eu/chemical-hazards-data</a></td></tr>
+<tr><td><strong>Prop 65 Source</strong></td><td><a href="https://oehha.ca.gov/proposition-65/proposition-65-list">oehha.ca.gov/proposition-65</a></td></tr>
+<tr><td><strong>ECHA Source</strong></td><td><a href="https://echa.europa.eu/regulations/clp/cl-inventory">echa.europa.eu/cl-inventory</a></td></tr>
+<tr><td><strong>CAS Number Lookup</strong></td><td><a href="https://commonchemistry.cas.org/">commonchemistry.cas.org</a></td></tr>
+<tr><td><strong>Your Data Repo</strong></td><td><a href="https://github.com/Harry0M/scanme-data">github.com/Harry0M/scanme-data</a></td></tr>
+</table>
+</div>
+
 </div>
 </body>
 </html>

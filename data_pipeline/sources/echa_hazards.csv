@@ -1,0 +1,26 @@
+Substance Name,CAS Number,Hazard Class,Hazard Statement
+Formaldehyde,50-00-0,Carc. 1B; Muta. 2; Skin Sens. 1,H350 H341 H317 - May cause cancer; suspected mutagen; skin sensitizer
+Methanol,67-56-1,Acute Tox. 3; STOT SE 1,H301 H311 H331 H370 - Toxic if swallowed inhaled or in contact with skin; causes organ damage
+Toluene,108-88-3,Repr. 2; STOT RE 2; Asp. Tox. 1,H361d H373 H304 - Suspected of damaging fertility or unborn child
+Sodium Lauryl Sulfate,151-21-3,Skin Irrit. 2; Eye Dam. 1,H315 H318 - Causes skin irritation; causes serious eye damage
+Titanium Dioxide,13463-67-7,Carc. 2 (inhalation),H351 - Suspected of causing cancer (inhalation only)
+Benzene,71-43-2,Carc. 1A; Muta. 1B; STOT RE 1,H350 H340 H372 - May cause cancer; may cause genetic defects; causes damage to organs
+Trichloroethylene,79-01-6,Carc. 1B; Muta. 2,H350 H341 - May cause cancer; suspected of causing genetic defects
+Acrylamide,79-06-1,Carc. 1B; Muta. 1B; Repr. 2,H350 H340 H361f - May cause cancer; may cause genetic defects; suspected reproductive
+Ethylene oxide,75-21-8,Carc. 1B; Muta. 1B; Repr. 1B,H350 H340 H360f - May cause cancer; may cause genetic defects; may damage fertility
+Bisphenol A,80-05-7,Repr. 1B; Skin Sens. 1; STOT SE 3,H360F H317 H335 - May damage fertility; skin sensitizer; respiratory irritant
+Cadmium,7440-43-9,Carc. 1B; Muta. 2; Repr. 2; STOT RE 1,H350 H341 H361fd H372 - May cause cancer; suspected mutagen; organ damage
+Chromium trioxide,1333-82-0,Carc. 1A; Muta. 1B; Repr. 2,H350 H340 H361f - May cause cancer; may cause genetic defects
+Nickel,7440-02-0,Carc. 2; Skin Sens. 1; STOT RE 1,H351 H317 H372 - Suspected carcinogen; skin sensitizer; organ damage (respiratory)
+Lead,7439-92-1,Repr. 1A; STOT RE 2; Aquatic Chronic 1,H360Df H373 H410 - May damage fertility and unborn child
+Arsenic acid,7778-39-4,Carc. 1A; Acute Tox. 3,H350 H301 H331 - May cause cancer; toxic
+Diethylhexyl phthalate (DEHP),117-81-7,Repr. 1B,H360FD - May damage fertility; may damage unborn child
+Dibutyl phthalate (DBP),84-74-2,Repr. 1B; Aquatic Acute 1,H360Df H400 - May damage fertility and unborn child
+Triclosan,3380-34-5,Skin Irrit. 2; Eye Irrit. 2; Aquatic Acute 1,H315 H319 H400 - Skin and eye irritant; aquatic toxicant
+Parabens (propylparaben),94-13-3,Repr. 2; Skin Sens. 1,H361 H317 - Suspected of damaging fertility; skin sensitizer
+Sodium fluoride,7681-49-4,Acute Tox. 3; Eye Irrit. 2,H301 H319 - Toxic if swallowed; causes serious eye irritation
+Hydrogen peroxide,7722-84-1,Acute Tox. 4; Skin Corr. 1A,H302 H314 - Harmful if swallowed; causes severe skin burns
+Carbon black,1333-86-4,Carc. 2 (inhalation),H351 - Suspected of causing cancer (inhalation only)
+Diethanolamine,111-42-2,Acute Tox. 4; Skin Irrit. 2; STOT RE 2,H302 H315 H373 - Harmful; skin irritant; may cause organ damage
+Styrene,100-42-5,Repr. 2; STOT RE 1; Acute Tox. 4,H361d H372 H332 - Suspected reproductive; organ damage (hearing)
+Vinyl chloride,75-01-4,Carc. 1A; Muta. 2,H350 H341 - May cause cancer; suspected of causing genetic defects
