@@ -30,8 +30,18 @@ OUTPUT_DIR = Path(__file__).parent / "output"
 DB_FILENAME = "regulatory_data.db"
 VERSION_FILENAME = "version.json"
 
-# TODO: Replace placeholder URLs with actual stable download endpoints.
-# These URLs may change over time; verify before production use.
+# ---------------------------------------------------------------------------
+# DATA SOURCE STRATEGY:
+# Primary: Local CSV files in data_pipeline/sources/ (maintained manually)
+# Fallback: Live download URLs (may break when organizations change their sites)
+#
+# If a live URL fails, the pipeline uses the local CSV as fallback.
+# Update local CSVs periodically by visiting source websites.
+# ---------------------------------------------------------------------------
+
+LOCAL_SOURCES_DIR = Path(__file__).parent / "sources"
+
+# Live download URLs (may become outdated — see docs site for troubleshooting)
 SOURCE_URLS = {
     "IARC": (
         "https://monographs.iarc.who.int/wp-content/uploads/2024/"
@@ -50,6 +60,15 @@ SOURCE_URLS = {
         "echa-hazard-classification.csv"
     ),
 }
+
+# Local fallback CSV files (always available, manually maintained)
+LOCAL_SOURCES = {
+    "IARC": LOCAL_SOURCES_DIR / "iarc_classifications.csv",
+    "CA_PROP_65": LOCAL_SOURCES_DIR / "prop65_chemicals.csv",
+}
+
+# Force-use local sources for these (live URLs are broken or return HTML)
+FORCE_LOCAL = {"IARC", "CA_PROP_65"}
 
 # Request settings
 REQUEST_TIMEOUT = 60  # seconds
@@ -581,7 +600,7 @@ def build_database(df: pd.DataFrame, db_path: Path) -> None:
         CREATE TABLE classifications (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             ingredient_id INTEGER NOT NULL,
-            cas_number TEXT NOT NULL,
+            cas_number TEXT,
             source TEXT NOT NULL,
             classification TEXT NOT NULL,
             risk_level TEXT NOT NULL,
@@ -671,19 +690,35 @@ def build_database(df: pd.DataFrame, db_path: Path) -> None:
         notes = row.get("notes")
 
         # Insert classification (one-to-many, allows duplicates per source)
-        cursor.execute(
-            "INSERT INTO classifications "
-            "(ingredient_id, cas_number, source, classification, "
-            "risk_level, health_categories, publication_date, notes) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (ing_id, cas, source, classification, risk_level,
-             health_cats, pub_date, notes),
-        )
-        classifications_inserted += 1
+        # Skip records without a CAS number for the classifications table
+        if cas:
+            cursor.execute(
+                "INSERT INTO classifications "
+                "(ingredient_id, cas_number, source, classification, "
+                "risk_level, health_categories, publication_date, notes) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (ing_id, cas, source, classification, risk_level,
+                 health_cats, pub_date, notes),
+            )
+            classifications_inserted += 1
+        else:
+            # Use canonical name as fallback identifier in classifications
+            fallback_id = row.get("canonical_name", "unknown")
+            cursor.execute(
+                "INSERT INTO classifications "
+                "(ingredient_id, cas_number, source, classification, "
+                "risk_level, health_categories, publication_date, notes) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (ing_id, fallback_id, source, classification, risk_level,
+                 health_cats, pub_date, notes),
+            )
+            classifications_inserted += 1
 
         # Insert into flat regulatory_data table (Room compatible)
         # Use INSERT OR REPLACE to handle duplicates by (casNumber, source)
-        if cas:
+        # Only insert if CAS number exists (Room primary key requires it)
+        cas_str = str(cas).strip() if cas and not pd.isna(cas) else ""
+        if cas_str:
             e_num = row.get("e_number") or None
             name = row.get("canonical_name", "")
             cursor.execute(
@@ -759,10 +794,22 @@ def main() -> None:
     # Ensure output directory exists
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Step 1: Download all sources
+    # Step 1: Download all sources (try live first, fall back to local CSVs)
     raw_data: dict[str, str | None] = {}
     for name, url in SOURCE_URLS.items():
-        raw_data[name] = download_source(name, url)
+        # Skip live download for sources we know are broken
+        if name in FORCE_LOCAL:
+            raw_data[name] = None
+        else:
+            raw_data[name] = download_source(name, url)
+        # If live download failed or skipped, try local fallback
+        if raw_data[name] is None and name in LOCAL_SOURCES:
+            local_path = LOCAL_SOURCES[name]
+            if local_path.exists():
+                logger.info(f"  Using local source for {name}: {local_path}")
+                raw_data[name] = local_path.read_text(encoding="utf-8")
+            else:
+                logger.warning(f"  No local fallback available for {name}")
 
     # Step 2: Parse each source
     dataframes: list[pd.DataFrame] = []
